@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.config import Settings, get_settings
 from .api.routes.health import router as health_router
+from .api.routes.users import router as users_router
+from .db.init_db import init_db
 
 
 def create_app() -> FastAPI:
@@ -23,10 +25,16 @@ def create_app() -> FastAPI:
 
     # Routers
     app.include_router(health_router)
+    app.include_router(users_router)
 
     @app.get("/", tags=["root"])  # simple root endpoint
     async def root():
         return {"message": f"{settings.PROJECT_NAME} API"}
+
+    @app.on_event("startup")
+    async def _startup():
+        # Dev-only: auto create tables (no Alembic yet)
+        await init_db()
 
     return app
 

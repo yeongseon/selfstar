@@ -85,16 +85,67 @@ curl http://localhost:8000/health
 cp .env.example .env
 ```
 
+현재 포함 변수:
+
+| 변수 | 기본값/예시 | 설명 |
+|------|-------------|------|
+| LOG_LEVEL | info | 로깅 레벨 |
+| DB_HOST | localhost (docker-compose에서는 `mysql`) | MySQL 호스트 |
+| DB_PORT | 3306 | MySQL 포트 |
+| DB_USER | appuser | MySQL 사용자 |
+| DB_PASSWORD | apppass | MySQL 비밀번호 |
+| DB_NAME | appdb | 데이터베이스 이름 |
+| DB_ECHO | false | SQLAlchemy SQL 에코 출력 (디버그용) |
+
 ### 테스트
 ```
 pytest -q
 ```
 
+### Docker + MySQL 로컬 개발
+
+`docker-compose.yml` 을 사용해 MySQL 8 및 FastAPI 백엔드를 동시에 실행할 수 있습니다.
+
+빌드 & 실행:
+```
+docker compose up --build -d
+```
+
+서비스:
+- `mysql` (포트 3306) - DB: `appdb`, 사용자: `appuser` / `apppass`
+- `backend` (포트 8000) - 자동 리로드
+
+테이블은 앱 시작 시 `init_db()` 로 자동 생성됩니다 (개발 편의). 스키마 초기화 재실행을 원하면 볼륨 제거:
+```
+docker compose down -v
+docker compose up --build -d
+```
+
+호스트에서 MySQL 접속 테스트:
+```
+mysql -h 127.0.0.1 -P 3306 -u appuser -papppass appdb
+```
+
+#### 사용자 API 예시
+생성:
+```
+curl -X POST http://localhost:8000/users \
+	-H 'Content-Type: application/json' \
+	-d '{"name":"Alice","email":"alice@example.com"}'
+```
+
+목록:
+```
+curl http://localhost:8000/users
+```
+
 ### 다음 확장 아이디어
-- 데이터베이스(SQLAlchemy) 연결 및 `models/` 구현
+- Alembic 마이그레이션 도입 (자동 생성 대신)
+- `/users` 페이지네이션 및 정렬/검색
+- 고유 이메일 중복시 409 반환 등 에러 정규화
 - 인증 / JWT
 - OpenAPI 보안 스키마 추가
-- CI 파이프라인에서 테스트 자동화
+- CI 파이프라인에서 테스트 + DB 연동
 
 ---
 초기 FastAPI 백엔드 스캐폴드가 준비되었습니다.
